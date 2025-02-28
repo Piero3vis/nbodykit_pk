@@ -8,6 +8,7 @@ import logging
 import camb
 from camb import model, initialpower
 import os
+from scipy.interpolate import interp1d
 
 def setup_logging():
     # Create a custom formatter that only shows the message
@@ -62,13 +63,14 @@ def calculate_power_spectrum(input_path, nmesh=256, box_size=100.0):
         
         logging.info("Calculating power spectrum")
         k_min = calculate_k_range(box_size, nmesh)[0]
-        power_spectrum = FFTPower(mesh, mode='1d', kmin=k_min, dk = k_min)
+        power_spectrum = FFTPower(mesh, mode='1d', kmin=k_min)
         power_spectrum.shot_noise = True
         k = power_spectrum.power['k']
-        print(f'computed k min: {k.min()}')
+        print(f'computed k min: {k.min()}, difference between computed and theoretical k min: {k.min() - k_min_theory}')
         pk = power_spectrum.power['power'].real
         shot_noise = power_spectrum.attrs['volume'] / power_spectrum.attrs['N1']
         
+        print(f'computed dk: {power_spectrum.attrs["dk"]}')
         # Create directory for power spectrum data if it doesn't exist
         os.makedirs('power_spectrum', exist_ok=True)
         
@@ -138,12 +140,12 @@ def get_camb_linear_pk(box_size, kmin=1e-4, kmax=10.0, npoints=4000):
     
     # Get linear spectrum first
     results = camb.get_results(pars)
-    k_h, z, pk_lin = results.get_matter_power_spectrum(minkh=kmin, maxkh=kmax, npoints=200)
+    k_h, z, pk_lin = results.get_matter_power_spectrum(minkh=kmin, maxkh=kmax, npoints=1000)
     
     # Now get non-linear spectrum
     pars.NonLinear = 1
     results = camb.get_results(pars)
-    k_h, z, pk_nonlin = results.get_matter_power_spectrum(minkh=kmin, maxkh=kmax, npoints=200)
+    k_h, z, pk_nonlin = results.get_matter_power_spectrum(minkh=kmin, maxkh=kmax, npoints=1000)
     
     return k_h, pk_lin[0], pk_nonlin[0]  # Return k and both P(k) at z=0
 
@@ -153,67 +155,91 @@ def plot_power_spectrum(k, pk, shot_noise, box_size, nmesh, sim_name, show=True)
     # Calculate k_min and k_max
     k_min_theory, k_max_theory = calculate_k_range(box_size, nmesh)
     
-    # Set colorblind-friendly colors with better contrast for overlapping lines
+    # Set colors using a modified Wes Anderson palette
     measured_color = '#0D324D'    # prussian blue
-    linear_color = '#FB8B24'      # orange
-    nonlinear_color = '#78290F'    # vermilion
+    linear_color = '#3F88C5'      # orange
+    nonlinear_color = '#FFBA08'    # vermilion
     vertical_color = '#999999'    # gray
     
-    # Create figure with larger size
-    plt.figure(figsize=(12, 8))
+    # Create figure with two panels
+    fig = plt.figure(figsize=(12, 10))
+    gs = plt.GridSpec(2, 1, height_ratios=[2, 1], hspace=0)  # Set hspace to 0
     
-    # Plot measured power spectrum with dots and lines
-    plt.loglog(k, pk - shot_noise, color=measured_color, 
-               linestyle='-', 
-               label="Measured P(k)", linewidth=3, zorder=3)
+    # Top panel for power spectra
+    ax1 = plt.subplot(gs[0])
+    
+    # Plot measured power spectrum with clean line
+    ax1.loglog(k, pk - shot_noise, color=measured_color, 
+              linestyle='-', linewidth=3, 
+              label="Measured P(k)", zorder=3)
     
     # Calculate and plot both linear and non-linear CAMB power spectra
     k_lin, pk_lin, pk_nonlin = get_camb_linear_pk(box_size)
-    plt.loglog(k_lin, pk_lin, '--', color=linear_color, 
-               label="Linear P(k) (WMAP9)", linewidth=2.5, zorder=1)
-    plt.loglog(k_lin, pk_nonlin, ':', color=nonlinear_color, 
-               label="Non-linear P(k) (WMAP9)", linewidth=3.5, zorder=2)
+    ax1.loglog(k_lin, pk_lin, '--', color=linear_color, 
+              label="Linear P(k) (WMAP9)", linewidth=3, zorder=1)
+    ax1.loglog(k_lin, pk_nonlin, ':', color=nonlinear_color, 
+              label="Non-linear P(k) (WMAP9)", linewidth=4, zorder=2)
     
     # Add vertical lines for k_min and k_max
-    plt.axvline(x=k_min_theory, color=vertical_color, linestyle=':', linewidth=2, alpha=0.7,
-                label=f'k_min = {k_min_theory:.2e} h/Mpc')
-    plt.axvline(x=k_max_theory, color=vertical_color, linestyle=':', linewidth=2, alpha=0.7,
-                label=f'k_max = {k_max_theory:.2e} h/Mpc')
+    ax1.axvline(x=k_min_theory, color=vertical_color, linestyle=':', linewidth=1, alpha=0.7)
+    ax1.axvline(x=k_max_theory, color=vertical_color, linestyle=':', linewidth=1, alpha=0.7)
     
     # Add text annotations for k_min and k_max
-    ymin = plt.ylim()[0]
-    plt.text(k_min_theory*1.1, ymin*1.5, 'k_min', rotation=90, 
-             color=vertical_color, fontsize=14, alpha=0.8)
-    plt.text(k_max_theory*1.1, ymin*1.5, 'k_max', rotation=90, 
-             color=vertical_color, fontsize=14, alpha=0.8)
     
-    # Customize the plot
-    plt.xlabel('k [h/Mpc]', fontsize=16, labelpad=10)
-    plt.ylabel('P(k) [(Mpc/h)³]', fontsize=16, labelpad=10)
-    plt.title(f'Matter Power Spectrum\n(Box={box_size} Mpc/h, Nmesh={nmesh})', 
-              fontsize=18, pad=20)
     
-    # Set scientific notation for both axes
-    ax = plt.gca()
-    # ax.xaxis.set_major_formatter(plt.ScalarFormatter(useMathText=True))
-    # ax.yaxis.set_major_formatter(plt.ScalarFormatter(useMathText=True))
+    # Bottom panel for differences
+    ax2 = plt.subplot(gs[1])
     
-    # # Force scientific notation
-    # ax.ticklabel_format(style='sci', axis='both')
+    # Interpolate theoretical power spectra to measured k values
+    f_lin = interp1d(k_lin, pk_lin, bounds_error=False, fill_value='extrapolate')
+    f_nonlin = interp1d(k_lin, pk_nonlin, bounds_error=False, fill_value='extrapolate')
     
-    # Increase tick sizes
-    plt.tick_params(axis='both', which='major', labelsize=14, length=8, width=1)
-    plt.tick_params(axis='both', which='minor', labelsize=12, length=4, width=1)
+    # Calculate differences
+    diff_lin = (pk - shot_noise) - f_lin(k)
+    diff_nonlin = (pk - shot_noise) - f_nonlin(k)
     
-    # Adjust legend
-    plt.legend(fontsize=14, framealpha=0.9, loc='best', 
-              borderaxespad=0.)
+    # Plot differences with log scale on x-axis only
+    ax2.plot(k, diff_lin, '--', color=linear_color, 
+            label="Measured - Linear", linewidth=2)
+    ax2.plot(k, diff_nonlin, ':', color=nonlinear_color, 
+            label="Measured - Non-linear", linewidth=3)
+    ax2.plot(k, np.zeros_like(k), color=measured_color, linestyle='-', linewidth=3)
+    ax2.axvline(x=k_min_theory, color=vertical_color, linestyle=':', linewidth=1, alpha=0.7)
+    ax2.axvline(x=k_max_theory, color=vertical_color, linestyle=':', linewidth=1, alpha=0.7)
+       
+    # Set x-axis to log scale after plotting
+    ax2.set_xscale('log')
+
+    ymin = ax2.get_ylim()[0]
+    ax2.text(k_min_theory*1.1   , ymin*1.5, 'k_min', rotation=90, 
+            color=vertical_color, fontsize=12, alpha=0.8)
+    ax2.text(k_max_theory*1.1, ymin*1.5, 'k_max', rotation=90, 
+            color=vertical_color, fontsize=12, alpha=0.8)
     
-    # Add light grid
-    plt.grid(True, which='both', linestyle=':', alpha=0.2)
+    # Customize both panels
+    for ax in [ax1, ax2]:
+        ax.set_xlim(k_min_theory/1.5, k_max_theory*1.5)
+        #ax.grid(True, which='both', linestyle=':', alpha=0.2)
+        ax.tick_params(axis='both', which='major', labelsize=12, length=8, width=1)
+        ax.tick_params(axis='both', which='minor', labelsize=10, length=4, width=1)
+        # ax.xaxis.set_major_formatter(plt.ScalarFormatter(useMathText=True))
+        # ax.yaxis.set_major_formatter(plt.ScalarFormatter(useMathText=True))
+        # ax.ticklabel_format(style='sci', scilimits=(-2,2), axis='both')
     
-    # Set plot limits with some padding
-    #plt.xlim(k_min_theory/1.5, k_max_theory*1.5)
+    # Hide x-axis labels for top panel
+    ax1.tick_params(labelbottom=False)
+    
+    # Labels and title
+    ax2.set_xlabel('k [h/Mpc]', fontsize=14, labelpad=10)
+    ax1.set_ylabel('P(k) [(Mpc/h)³]', fontsize=14, labelpad=10)
+    ax2.set_ylabel('ΔP(k) [(Mpc/h)³]', fontsize=14, labelpad=10)
+    ax1.set_title(f'Matter Power Spectrum\n(Box={box_size} Mpc/h, Nmesh={nmesh})', 
+                 fontsize=16, pad=20)
+    
+    # Legends
+    ax1.legend(fontsize=12, framealpha=0.9, loc='lower left', 
+             bbox_to_anchor=(0.02, 0.02), borderaxespad=0.)
+    ax2.legend(fontsize=12, framealpha=0.9, loc='upper right')
     
     # Add some padding around the plot
     plt.tight_layout()
@@ -223,7 +249,7 @@ def plot_power_spectrum(k, pk, shot_noise, box_size, nmesh, sim_name, show=True)
     
     # Generate plot filename based on parameters
     plot_file = os.path.join('plots', 
-                            f"power_spectrum_box{box_size}_nmesh{nmesh}_{sim_name}.png")
+                           f"power_spectrum_box{box_size}_nmesh{nmesh}_{sim_name}.png")
     plt.savefig(plot_file, dpi=300, bbox_inches='tight')
     logging.info(f"Plot saved to {plot_file}")
     
