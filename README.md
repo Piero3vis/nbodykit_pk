@@ -31,13 +31,27 @@ data/
     └── Position/
 ```
 
+## Data Requirements
+
+### Resolution Requirements
+- HR and SR simulations must have the same number of particles
+- LR simulation should have a number of particles that divides evenly into HR/SR
+
+### Position Requirements
+- Positions are in kpc units
+- Valid range: [0, 100000] kpc
+- **Important**: Positions must be divided by 1000 for Pk calculations (to convert to Mpc)
+
 ## Scripts
 
 ### check_sims.py
 Preliminary check of simulation data:
 - Verifies directory structure
-- Checks for Position data
-- Reports array shapes and data types
+- Supports both simple and header formats
+- Checks particle counts and cube roots
+- Validates position ranges
+- Verifies resolution relationships
+- Reports simulation metadata (boxsize, redshift, etc. when available)
 
 Usage:
 ```bash
@@ -78,10 +92,13 @@ Common issues:
    - Create the directory and ensure proper simulation data structure
 2. BigFile read errors
    - Check file permissions
-   - Verify data format
-3. Environment issues
-   - Make sure conda environment is properly activated
-   - Check all dependencies are installed
+   - Verify data format matches expected structure
+3. Resolution mismatches
+   - Verify HR and SR have identical particle counts
+   - Verify LR particle count divides evenly into HR/SR
+4. Position range issues
+   - Verify positions are in kpc
+   - Check for values outside [0, 100000] range
 
 ## Future Features
 - Multiple simulation comparison

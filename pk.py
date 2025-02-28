@@ -1,6 +1,7 @@
 import argparse
 import numpy as np
 from nbodykit.io.bigfile import BigFile
+from bigfile import File
 from nbodykit.source.catalog import BigFileCatalog, ArrayCatalog
 from nbodykit.lab import FFTPower
 import matplotlib.pyplot as plt
@@ -32,6 +33,14 @@ def calculate_k_range(box_size, nmesh):
 def calculate_power_spectrum(input_path, nmesh=256, box_size=100.0):
     logging.info(f"Reading BigFile from: {input_path}")
     
+    # Determine simulation type (LR/HR/SR) from path
+    sim_type = None
+    for t in ['LR', 'HR', 'SR']:
+        if t in input_path:
+            sim_type = t
+            break
+    logging.info(f"Simulation type: {sim_type if sim_type else 'unknown'}")
+    
     # Calculate and print theoretical k range
     k_min_theory, k_max_theory = calculate_k_range(box_size, nmesh)
     logging.info(f"\nTheoretical k range formulas:")
@@ -47,11 +56,34 @@ def calculate_power_spectrum(input_path, nmesh=256, box_size=100.0):
     logging.info(f"     = π*{nmesh}/{box_size:.1f}")
     
     try:
-        bf = BigFile(input_path)[:]
-        logging.info("Successfully loaded BigFile")
+        # original simulation has a different format for getting the positions
+        if os.path.exists(os.path.join(input_path, 'Position')):
+            logging.info("Found simple Position format")
+            bf = BigFile(input_path)[:]
+            positions = bf['Position']
+        else:
+            logging.info("Found Header format")
+            bigf = File(input_path)
+            header = bigf.open('Header')
+            boxsize = header.attrs['BoxSize'][0]
+            redshift = 1./header.attrs['Time'][0] - 1
+            
+            Ng = header.attrs['TotNumPart'][1] ** (1/3)
+            Ng = int(np.rint(Ng))
+
+            cellsize = boxsize / Ng
+
+            pid_ = bigf.open('1/ID')[:] - 1   # so that particle id starts from 0
+            pos_ = bigf.open('1/Position')[:]
+            pos = np.empty_like(pos_)
+            pos[pid_] = pos_
+            pos = pos.reshape(Ng, Ng, Ng, 3)
+            positions = pos.reshape(-1, 3)
+            
+            logging.info("Successfully loaded BigFile")
         
         # Convert positions from Kpc/h to Mpc/h
-        positions = bf['Position'] / 1000.0  # Convert from Kpc/h to Mpc/h
+        positions = positions / 1000.0  # Convert from Kpc/h to Mpc/h
         logging.info("Converted positions from Kpc/h to Mpc/h")
         
         data = {'Position': positions}
@@ -62,7 +94,7 @@ def calculate_power_spectrum(input_path, nmesh=256, box_size=100.0):
         mesh = arr.to_mesh(Nmesh=nmesh, BoxSize=box_size, window=None, resampler='tsc', interlaced=True, compensated=True)
         
         logging.info("Calculating power spectrum")
-        k_min = calculate_k_range(box_size, nmesh)[0]
+        k_min, k_max = calculate_k_range(box_size, nmesh)
         power_spectrum = FFTPower(mesh, mode='1d', kmin=k_min)
         power_spectrum.shot_noise = True
         k = power_spectrum.power['k']
@@ -83,6 +115,12 @@ def calculate_power_spectrum(input_path, nmesh=256, box_size=100.0):
         logging.info(f"Saving power spectrum to {output_file}")
         np.savetxt(output_file, np.column_stack([k, pk, np.repeat(shot_noise, len(pk))]), 
                   header="k P(k) shot_noise", fmt='%.8e')
+        
+        # Print output locations more clearly
+        logging.info("\nOutput files:")
+        logging.info(f"Power spectrum data: {output_file}")
+        theory_file = os.path.join('power_spectrum', f"theory_pk_box{box_size}_nmesh{nmesh}.txt")
+        logging.info(f"Theoretical P(k): {theory_file}")
         
         return k, pk, shot_noise, sim_name
         
@@ -150,115 +188,97 @@ def get_camb_linear_pk(box_size, kmin=1e-4, kmax=10.0, npoints=4000):
     return k_h, pk_lin[0], pk_nonlin[0]  # Return k and both P(k) at z=0
 
 def plot_power_spectrum(k, pk, shot_noise, box_size, nmesh, sim_name, show=True):
-    logging.info("Creating power spectrum plot")
+    """Create a three-panel plot: P(k), ratio, and difference."""
     
-    # Calculate k_min and k_max
+    # Calculate theoretical spectra
+    k_theory, pk_lin, pk_nonlin = get_camb_linear_pk(box_size)
+    
+    # Calculate measured P(k) minus shot noise
+    pk_measured = pk - shot_noise
+    
+    # Create interpolation functions for theoretical spectra
+    f_lin = interp1d(k_theory, pk_lin, bounds_error=False, fill_value='extrapolate')
+    f_nonlin = interp1d(k_theory, pk_nonlin, bounds_error=False, fill_value='extrapolate')
+    
+    # Calculate ratios and differences
+    pk_lin_interp = f_lin(k)
+    pk_nonlin_interp = f_nonlin(k)
+    
+    ratio_lin = pk_measured / pk_lin_interp
+    ratio_nonlin = pk_measured / pk_nonlin_interp
+    
+    diff_lin = pk_measured - pk_lin_interp
+    diff_nonlin = pk_measured - pk_nonlin_interp
+    
+    # Set up the figure
+    fig = plt.figure(figsize=(10, 12))
+    gs = plt.GridSpec(3, 1, height_ratios=[1.2, 1, 1], hspace=0)
+    
+    # Calculate k range from theory
     k_min_theory, k_max_theory = calculate_k_range(box_size, nmesh)
+    x_min = k_min_theory/1.2
+    x_max = k_max_theory*1.1
     
-    # Set colors using a modified Wes Anderson palette
-    measured_color = '#0D324D'    # prussian blue
-    linear_color = '#3F88C5'      # orange
-    nonlinear_color = '#FFBA08'    # vermilion
-    vertical_color = '#999999'    # gray
+    # Colors
+    measured_color = 'navy'
+    linear_color = 'orange'
+    nonlinear_color = 'brown'
     
-    # Create figure with two panels
-    fig = plt.figure(figsize=(12, 10))
-    gs = plt.GridSpec(2, 1, height_ratios=[2, 1], hspace=0)  # Set hspace to 0
-    
-    # Top panel for power spectra
+    # Top panel: P(k)
     ax1 = plt.subplot(gs[0])
+    ax1.loglog(k, pk_measured, '-', color=measured_color, label='Measured', linewidth=2)
+    ax1.loglog(k_theory, pk_lin, '-', color=linear_color, label='Linear (WMAP9)', linewidth=2)
+    ax1.loglog(k_theory, pk_nonlin, '-', color=nonlinear_color, label='Non-linear (WMAP9)', linewidth=2)
+    ax1.set_ylabel('P(k) [(Mpc/h)³]')
+    ax1.legend(fontsize=10)
+    ax1.set_title(f'Matter Power Spectrum\n(Box={box_size} Mpc/h, Nmesh={nmesh})', pad=10)
     
-    # Plot measured power spectrum with clean line
-    ax1.loglog(k, pk - shot_noise, color=measured_color, 
-              linestyle='-', linewidth=3, 
-              label="Measured P(k)", zorder=3)
-    
-    # Calculate and plot both linear and non-linear CAMB power spectra
-    k_lin, pk_lin, pk_nonlin = get_camb_linear_pk(box_size)
-    ax1.loglog(k_lin, pk_lin, '--', color=linear_color, 
-              label="Linear P(k) (WMAP9)", linewidth=3, zorder=1)
-    ax1.loglog(k_lin, pk_nonlin, ':', color=nonlinear_color, 
-              label="Non-linear P(k) (WMAP9)", linewidth=4, zorder=2)
-    
-    # Add vertical lines for k_min and k_max
-    ax1.axvline(x=k_min_theory, color=vertical_color, linestyle=':', linewidth=1, alpha=0.7)
-    ax1.axvline(x=k_max_theory, color=vertical_color, linestyle=':', linewidth=1, alpha=0.7)
-    
-    # Add text annotations for k_min and k_max
-    
-    
-    # Bottom panel for differences
+    # Middle panel: Ratio
     ax2 = plt.subplot(gs[1])
+    ax2.semilogx(k, ratio_lin, '-', color=linear_color, label='Measured/Linear', linewidth=2, alpha=0.8)
+    ax2.semilogx(k, ratio_nonlin, '-', color=nonlinear_color, label='Measured/Non-linear', linewidth=2, alpha=0.8)
+    ax2.axhline(y=1, color='black', linestyle='-', alpha=0.8, linewidth=2)
+    ax2.set_ylabel('P(k)$_{measured}$/P(k)$_{theory}$')
+    ax2.legend(fontsize=10)
     
-    # Interpolate theoretical power spectra to measured k values
-    f_lin = interp1d(k_lin, pk_lin, bounds_error=False, fill_value='extrapolate')
-    f_nonlin = interp1d(k_lin, pk_nonlin, bounds_error=False, fill_value='extrapolate')
+    # Bottom panel: Difference
+    ax3 = plt.subplot(gs[2])
+    ax3.semilogx(k, diff_lin, '-', color=linear_color, label='Measured - Linear', linewidth=2, alpha=0.8)
+    ax3.semilogx(k, diff_nonlin, '-', color=nonlinear_color, label='Measured - Non-linear', linewidth=2, alpha=0.8)
+    ax3.axhline(y=0, color='black', linestyle='-', alpha=0.8, linewidth=2)
+    ax3.set_ylabel('ΔP(k) [(Mpc/h)³]')
+    ax3.set_xlabel('k [h/Mpc]')
+    ax3.legend(fontsize=10)
     
-    # Calculate differences
-    diff_lin = (pk - shot_noise) - f_lin(k)
-    diff_nonlin = (pk - shot_noise) - f_nonlin(k)
+    # Set consistent x-axis limits and format all panels
+    for ax in [ax1, ax2, ax3]:
+        ax.set_xlim(x_min, x_max)
+        ax.grid(False)
+        ax.tick_params(axis='both', which='major', labelsize=12)
+        
+        # Format x-axis ticks as powers of 10
+        ax.xaxis.set_major_formatter(plt.FuncFormatter(
+            lambda x, _: r'$10^{{{:d}}}$'.format(int(np.log10(x))) if x > 0 else '0'))
+        
+        # Format y-axis ticks
+        if ax == ax1:  # Power spectrum (log scale)
+            ax.yaxis.set_major_formatter(plt.FuncFormatter(
+                lambda y, _: r'$10^{{{:d}}}$'.format(int(np.log10(y))) if y > 0 else '0'))
     
-    # Plot differences with log scale on x-axis only
-    ax2.plot(k, diff_lin, '--', color=linear_color, 
-            label="Measured - Linear", linewidth=2)
-    ax2.plot(k, diff_nonlin, ':', color=nonlinear_color, 
-            label="Measured - Non-linear", linewidth=3)
-    ax2.plot(k, np.zeros_like(k), color=measured_color, linestyle='-', linewidth=3)
-    ax2.axvline(x=k_min_theory, color=vertical_color, linestyle=':', linewidth=1, alpha=0.7)
-    ax2.axvline(x=k_max_theory, color=vertical_color, linestyle=':', linewidth=1, alpha=0.7)
-       
-    # Set x-axis to log scale after plotting
-    ax2.set_xscale('log')
-
-    ymin = ax2.get_ylim()[0]
-    ax2.text(k_min_theory*1.1   , ymin*1.5, 'k_min', rotation=90, 
-            color=vertical_color, fontsize=12, alpha=0.8)
-    ax2.text(k_max_theory*1.1, ymin*1.5, 'k_max', rotation=90, 
-            color=vertical_color, fontsize=12, alpha=0.8)
-    
-    # Customize both panels
-    for ax in [ax1, ax2]:
-        ax.set_xlim(k_min_theory/1.5, k_max_theory*1.5)
-        #ax.grid(True, which='both', linestyle=':', alpha=0.2)
-        ax.tick_params(axis='both', which='major', labelsize=12, length=8, width=1)
-        ax.tick_params(axis='both', which='minor', labelsize=10, length=4, width=1)
-        # ax.xaxis.set_major_formatter(plt.ScalarFormatter(useMathText=True))
-        # ax.yaxis.set_major_formatter(plt.ScalarFormatter(useMathText=True))
-        # ax.ticklabel_format(style='sci', scilimits=(-2,2), axis='both')
-    
-    # Hide x-axis labels for top panel
+    # Hide x-axis labels for top and middle panels
     ax1.tick_params(labelbottom=False)
+    ax2.tick_params(labelbottom=False)
     
-    # Labels and title
-    ax2.set_xlabel('k [h/Mpc]', fontsize=14, labelpad=10)
-    ax1.set_ylabel('P(k) [(Mpc/h)³]', fontsize=14, labelpad=10)
-    ax2.set_ylabel('ΔP(k) [(Mpc/h)³]', fontsize=14, labelpad=10)
-    ax1.set_title(f'Matter Power Spectrum\n(Box={box_size} Mpc/h, Nmesh={nmesh})', 
-                 fontsize=16, pad=20)
-    
-    # Legends
-    ax1.legend(fontsize=12, framealpha=0.9, loc='lower left', 
-             bbox_to_anchor=(0.02, 0.02), borderaxespad=0.)
-    ax2.legend(fontsize=12, framealpha=0.9, loc='upper right')
-    
-    # Add some padding around the plot
-    plt.tight_layout()
-    
-    # Create plots directory if it doesn't exist
-    os.makedirs('plots', exist_ok=True)
-    
-    # Generate plot filename based on parameters
-    plot_file = os.path.join('plots', 
-                           f"power_spectrum_box{box_size}_nmesh{nmesh}_{sim_name}.png")
-    plt.savefig(plot_file, dpi=300, bbox_inches='tight')
-    logging.info(f"Plot saved to {plot_file}")
-    
+    # Save and show plot
+    plt.savefig(f'plots/power_spectrum_box{box_size}_nmesh{nmesh}_{sim_name}.png', 
+                bbox_inches='tight', dpi=300)
     if show:
         plt.show()
+    plt.close()
 
 def main():
     parser = argparse.ArgumentParser(description='Calculate and plot power spectrum from BigFile')
-    parser.add_argument('input_path', help='Path to the input BigFile')
+    parser.add_argument('--input_path', help='Path to the input BigFile')
     parser.add_argument('--nmesh', type=int, default=256, help='Number of mesh cells (default: 256)')
     parser.add_argument('--box-size', type=float, default=100.0, 
                        help='Box size in Mpc/h (default: 100.0)')
