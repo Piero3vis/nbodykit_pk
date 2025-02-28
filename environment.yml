@@ -1,0 +1,15 @@
+name: power_spectrum
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - numpy>=1.20
+  - matplotlib>=3.5
+  - scipy>=1.7
+  - h5py>=3.0
+  - pip
+  - pip:
+    - bigfile>=0.1.48
+    - nbodykit>=0.3.15
+    - camb>=1.3.5 

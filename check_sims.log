@@ -1,0 +1,28 @@
+
+Checking for simulation directories...
+
+Found LR simulation directory:
+Path: data/LR
+Contents: ['lr_ds_from_sim_64']
+
+Found HR simulation directory:
+Path: data/HR
+Contents: ['PART_010']
+
+Found SR simulation directory:
+Path: data/SR
+Contents: ['sr_from_sim_32_x2']
+
+Summary of available simulation directories:
+
+LR:
+  Path: data/LR
+  Contents: ['lr_ds_from_sim_64']
+
+HR:
+  Path: data/HR
+  Contents: ['PART_010']
+
+SR:
+  Path: data/SR
+  Contents: ['sr_from_sim_32_x2']
