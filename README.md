@@ -11,6 +11,23 @@ Tools for computing and analyzing matter power spectra from N-body simulations. 
 
 ## Project Structure
 
+power-spectrum-analysis/
+├── compute_plot_pk.sh # Interactive bash script for all operations
+├── data/ # Simulation data directory
+│ ├── LR/ # Low Resolution simulations
+│ ├── HR/ # High Resolution simulations
+│ └── SR/ # Standard Resolution simulations
+├── outputs/
+│ ├── plots/ # Generated plots
+│ └── power_spectra/ # Computed power spectra
+├── src/ # Source code
+│ ├── check_environment.py # Environment verification
+│ ├── main.py # Single simulation analysis
+│ ├── power_spectrum.py # Core power spectrum computation
+│ └── LR_HR_SR.py # Multi-simulation comparison
+├── tests/ # Unit tests
+└── environment.yml # Conda environment specification
+
 ## Setup
 
 ### Prerequisites
@@ -47,7 +64,7 @@ Run the interactive analysis tool:
 This presents a menu with three options:
 
 1. **Run Environment Check**
-   - Verifies Python environment and required packages
+   - Verifies that the simulation data is properly organized
    - No additional input needed
 
 2. **Compute Power Spectrum**
@@ -57,7 +74,7 @@ This presents a menu with three options:
      - Number of mesh cells (default: 256)
      - Box size in Mpc/h (default: 100.0)
    - Outputs:
-     - Power spectrum data in `outputs/power_spectra/`
+     - Power spectrum data in `outputs/power_spectum/`
      - Plot in `outputs/plots/`
    - Compares with WMAP9 non-linear power spectrum
 
@@ -74,7 +91,7 @@ You can also run the scripts individually:
 
 ```bash
 # Environment check
-python src/check_environment.py
+python src/check_sims.py
 
 # Single simulation analysis
 python src/main.py --input_path <path> --nmesh <N> --box-size <L>
