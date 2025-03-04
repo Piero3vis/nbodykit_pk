@@ -270,8 +270,10 @@ def plot_power_spectrum(k, pk, shot_noise, box_size, nmesh, sim_name, show=True)
     ax2.tick_params(labelbottom=False)
     
     # Save and show plot
-    plt.savefig(f'plots/power_spectrum_box{box_size}_nmesh{nmesh}_{sim_name}.png', 
+    os.makedirs('outputs/plots', exist_ok=True)
+    plt.savefig(f'outputs/plots/power_spectrum_box{box_size}_nmesh{nmesh}_{sim_name}.png', 
                 bbox_inches='tight', dpi=300)
+    print(f'saved plot to outputs/plots/power_spectrum_box{box_size}_nmesh{nmesh}_{sim_name}.png')
     if show:
         plt.show()
     plt.close()
