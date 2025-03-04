@@ -104,9 +104,9 @@ The code expects simulation data in the following structure:
 │   └── power_spectrum
 ├── power_spectrum
 ├── src
-│   └── __pycache__
+│   └── __init__.py
 └── tests
-    └── __pycache__
+    └── __init__.py
 ```
 ## Setup
 
@@ -264,14 +264,31 @@ Preliminary check of simulation data:
 
 Usage:
 ```bash
-python check_sims.py
+python src/check_sims.py
 ```
 
-### pk.py (coming soon)
+### pk.py
+
 Power spectrum calculation and analysis:
 - Computes power spectra for each simulation
 - Compares with theoretical predictions
-- Generates comparison plots
+
+Usage:
+```bash
+python src/main.py
+```
+
+### LR_HR_SR.py
+
+Multi-simulation comparison:
+- Creates comparison plots for LR, HR, and SR simulations
+- Attention (for now) uses fixed paths in data/LR/, data/HR/, data/SR/
+
+Usage:
+```bash
+python src/LR_HR_SR.py
+```
+
 
 ## File Descriptions
 
