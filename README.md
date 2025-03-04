@@ -11,22 +11,101 @@ Tools for computing and analyzing matter power spectra from N-body simulations. 
 
 ## Project Structure
 
-power-spectrum-analysis/
-├── compute_plot_pk.sh # Interactive bash script for all operations
-├── data/ # Simulation data directory
-│ ├── LR/ # Low Resolution simulations
-│ ├── HR/ # High Resolution simulations
-│ └── SR/ # Standard Resolution simulations
-├── outputs/
-│ ├── plots/ # Generated plots
-│ └── power_spectra/ # Computed power spectra
-├── src/ # Source code
-│ ├── check_environment.py # Environment verification
-│ ├── main.py # Single simulation analysis
-│ ├── power_spectrum.py # Core power spectrum computation
-│ └── LR_HR_SR.py # Multi-simulation comparison
-├── tests/ # Unit tests
-└── environment.yml # Conda environment specification
+pdata
+│   ├── HR
+│   │   └── PART_010
+│   │       ├── 0
+│   │       │   ├── Density
+│   │       │   ├── EgyWtDensity
+│   │       │   ├── ElectronAbundance
+│   │       │   ├── Generation
+│   │       │   ├── GroupID
+│   │       │   ├── HeIIIIonized
+│   │       │   ├── ID
+│   │       │   ├── InternalEnergy
+│   │       │   ├── Mass
+│   │       │   ├── Metallicity
+│   │       │   ├── Position
+│   │       │   ├── Potential
+│   │       │   ├── SmoothingLength
+│   │       │   └── Velocity
+│   │       ├── 1
+│   │       │   ├── GroupID
+│   │       │   ├── ID
+│   │       │   ├── Mass
+│   │       │   ├── Position
+│   │       │   ├── Potential
+│   │       │   └── Velocity
+│   │       ├── 2
+│   │       │   ├── GroupID
+│   │       │   ├── ID
+│   │       │   ├── Mass
+│   │       │   ├── Position
+│   │       │   ├── Potential
+│   │       │   └── Velocity
+│   │       ├── 3
+│   │       │   ├── GroupID
+│   │       │   ├── ID
+│   │       │   ├── Mass
+│   │       │   ├── Position
+│   │       │   ├── Potential
+│   │       │   └── Velocity
+│   │       ├── 4
+│   │       │   ├── BirthDensity
+│   │       │   ├── Generation
+│   │       │   ├── GroupID
+│   │       │   ├── ID
+│   │       │   ├── Mass
+│   │       │   ├── Metallicity
+│   │       │   ├── Position
+│   │       │   ├── Potential
+│   │       │   ├── StarFormationTime
+│   │       │   └── Velocity
+│   │       ├── 5
+│   │       │   ├── BlackholeAccretionRate
+│   │       │   ├── BlackholeDensity
+│   │       │   ├── BlackholeJumpToMinPot
+│   │       │   ├── BlackholeMass
+│   │       │   ├── BlackholeMinPotPos
+│   │       │   ├── BlackholeMseed
+│   │       │   ├── BlackholeMtrack
+│   │       │   ├── BlackholeProgenitors
+│   │       │   ├── BlackholeSwallowID
+│   │       │   ├── BlackholeSwallowTime
+│   │       │   ├── Generation
+│   │       │   ├── GroupID
+│   │       │   ├── ID
+│   │       │   ├── Mass
+│   │       │   ├── Position
+│   │       │   ├── Potential
+│   │       │   ├── SmoothingLength
+│   │       │   ├── StarFormationTime
+│   │       │   ├── Swallowed
+│   │       │   └── Velocity
+│   │       └── Header
+│   ├── LR
+│   │   ├── dis_32_ds
+│   │   │   ├── Position
+│   │   │   └── Velocity
+│   │   └── lr_ds_from_sim_64
+│   │       ├── Position
+│   │       └── Velocity
+│   └── SR
+│       ├── sr_from_sim_32_x2
+│       │   ├── Position
+│       │   └── Velocity
+│       └── srx2_from_dis_32_ds
+│           ├── Position
+│           └── Velocity
+├── docs
+├── outputs
+│   ├── plots
+│   └── power_spectrum
+├── power_spectrum
+├── src
+│   └── __pycache__
+└── tests
+    └── __pycache__
 
 ## Setup
 
