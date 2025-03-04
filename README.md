@@ -10,8 +10,9 @@ Tools for computing and analyzing matter power spectra from N-body simulations. 
 - Automated testing suite
 
 ## Project Structure
-
-pdata
+The code expects simulation data in the following structure:
+```
+├── data
 │   ├── HR
 │   │   └── PART_010
 │   │       ├── 0
@@ -106,7 +107,7 @@ pdata
 │   └── __pycache__
 └── tests
     └── __pycache__
-
+```
 ## Setup
 
 ### Prerequisites
