@@ -1,6 +1,6 @@
 # Power Spectrum Analysis
 
-Tools for computing and analyzing matter power spectra from N-body simulations. The code computes power spectra from simulation data and compares them with theoretical predictions from WMAP9 cosmology using CAMB's non-linear power spectrum.
+Interactive command-line interface and tools for computing and analyzing matter power spectra from N-body simulations with nbodykit. The code computes power spectra from simulation data and compares them with theoretical predictions from a theoretical cosmology (default WMAP9)  using CAMB's non-linear power spectrum.
 
 ## Features
 - Power spectrum computation from simulation data
@@ -236,7 +236,7 @@ data/
 │   └── Position/
 ├── HR/  # High Resolution simulation
 │   └── Position/
-└── SR/  # Standard Resolution simulation
+└── SR/  # Super Resolution simulation
     └── Position/
 ```
 
@@ -309,7 +309,7 @@ Key packages:
 
 1. Ensure your simulation data is properly organized in the `data/` directory
 2. Run `check_sims.py` first to verify data accessibility
-3. Use `pk.py` (when available) for power spectrum analysis
+3. Use `main.py` for power spectrum analysis
 
 ## Troubleshooting
 
