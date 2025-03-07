@@ -104,11 +104,11 @@ def calculate_power_spectrum(input_path, nmesh=256, box_size=100.0):
         
         print(f'computed dk: {power_spectrum.attrs["dk"]}')
         # Create directory for power spectrum data if it doesn't exist
-        os.makedirs('power_spectrum', exist_ok=True)
+        os.makedirs('outputs/power_spectrum', exist_ok=True)
         
         # Generate output filename based on parameters
         sim_name = input_path.rstrip('/').split('/')[-1]
-        output_file = os.path.join('power_spectrum', 
+        output_file = os.path.join('outputs/power_spectrum', 
                                  f"power_spectrum_box{box_size}_nmesh{nmesh}_{sim_name}.txt")
         
         # Save to a file

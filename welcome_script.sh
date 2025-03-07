@@ -90,8 +90,88 @@ echo -e "Enter number of mesh cells [default: 256]:"
 read nmesh
 nmesh=${nmesh:-256}
 
-echo -e "\n${GREEN}Generating comparison plots...${NC}"
-python src/LR_HR_SR.py --box-size "$box_size" --nmesh "$nmesh"
+# Create array of power spectrum files
+directories=($(find outputs/power_spectrum -maxdepth 2 -type f -name "*.txt" | sort))
+
+# Check if any files were found
+if [ ${#directories[@]} -eq 0 ]; then
+    echo -e "${RED}No power spectrum files found in outputs/power_spectrum/!${NC}"
+    echo -e "\nPress Enter to return to main menu..."
+    read
+    return
+fi
+
+# Select LR path
+echo -e "\n${GREEN}Select LR power spectrum file (press Enter for default):${NC}"
+select lr_path in "${directories[@]}" "Return to main menu"; do
+    if [ -z "$REPLY" ]; then  # User pressed Enter
+        lr_path=""
+        break
+    elif [ "$lr_path" = "Return to main menu" ]; then
+        return
+    elif [ -n "$lr_path" ]; then
+        break
+    else
+        echo -e "${RED}Invalid selection. Please try again.${NC}"
+    fi
+done
+
+# Select HR path
+echo -e "\n${GREEN}Select HR power spectrum file (press Enter for default):${NC}"
+select hr_path in "${directories[@]}" "Return to main menu"; do
+    if [ -z "$REPLY" ]; then  # User pressed Enter
+        hr_path=""
+        break
+    elif [ "$hr_path" = "Return to main menu" ]; then
+        return
+    elif [ -n "$hr_path" ]; then
+        break
+    else
+        echo -e "${RED}Invalid selection. Please try again.${NC}"
+    fi
+done
+
+# Select SR path
+echo -e "\n${GREEN}Select SR power spectrum file (press Enter for default):${NC}"
+select sr_path in "${directories[@]}" "Return to main menu"; do
+    if [ -z "$REPLY" ]; then  # User pressed Enter
+        sr_path=""
+        break
+    elif [ "$sr_path" = "Return to main menu" ]; then
+        return
+    elif [ -n "$sr_path" ]; then
+        break
+    else
+        echo -e "${RED}Invalid selection. Please try again.${NC}"
+    fi
+done
+
+echo -e "\n${GREEN}Generating comparison plots with:${NC}"
+# Only add path arguments if they were selected
+cmd="python src/LR_HR_SR.py --box-size $box_size --nmesh $nmesh"
+if [ -n "$lr_path" ]; then
+    cmd="$cmd --lr-path \"$lr_path\""
+    echo "LR path: $lr_path"
+else
+    echo "LR path: [default]"
+fi
+if [ -n "$hr_path" ]; then
+    cmd="$cmd --hr-path \"$hr_path\""
+    echo "HR path: $hr_path"
+else
+    echo "HR path: [default]"
+fi
+if [ -n "$sr_path" ]; then
+    cmd="$cmd --sr-path \"$sr_path\""
+    echo "SR path: $sr_path"
+else
+    echo "SR path: [default]"
+fi
+echo "Box size: $box_size Mpc/h"
+echo "Nmesh: $nmesh"
+
+# Execute the command
+eval $cmd
 
 echo -e "\nPress Enter to return to main menu..."
 read

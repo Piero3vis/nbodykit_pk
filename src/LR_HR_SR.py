@@ -76,13 +76,13 @@ def get_camb_linear_pk(box_size, kmin=1e-4, kmax=10.0, npoints=4000):
     
     return k_h, pk_lin[0], pk_nonlin[0]
 
-def plot_simulation_comparison(box_size=100.0, nmesh=256):
+def plot_simulation_comparison(box_size=100.0, nmesh=256, lr_path=None, hr_path=None, sr_path=None):
     """Create a three-panel plot comparing LR, HR, and SR simulations with theory."""
     
-    # File paths
-    lr_path = "outputs/power_spectrum/power_spectrum_box100.0_nmesh256_lr_ds_from_sim_64.txt"
-    hr_path = "outputs/power_spectrum/power_spectrum_box100.0_nmesh256_PART_010.txt"
-    sr_path = "outputs/power_spectrum/power_spectrum_box100.0_nmesh256_sr_from_sim_64_8x_ds_32.txt"
+    # Use provided paths or defaults
+    lr_path = lr_path or "outputs/power_spectrum/power_spectrum_box100.0_nmesh256_lr_ds_from_sim_64.txt"
+    hr_path = hr_path or "outputs/power_spectrum/power_spectrum_box100.0_nmesh256_PART_010.txt"
+    sr_path = sr_path or "outputs/power_spectrum/power_spectrum_box100.0_nmesh256_sr_from_sim_64_8x_ds_32.txt"
     
     # Load measured power spectra
     k_lr, pk_lr, shot_noise_lr = load_data(lr_path)
@@ -189,9 +189,10 @@ def plot_simulation_comparison(box_size=100.0, nmesh=256):
     plt.suptitle(f'Matter Power Spectrum Comparison\n(Box={box_size} Mpc/h, Nmesh={nmesh})', 
                 y=0.95, fontsize=16)
     
+    
+    os.makedirs('outputs/plots/comparison_plots', exist_ok=True)
+    plt.savefig('outputs/plots/comparison_plots/power_spectrum_comparison.png', bbox_inches='tight', dpi=300)
     plt.show()
-    # Save plot
-    plt.savefig('power_spectrum_comparison.png', bbox_inches='tight', dpi=300)
     plt.close()
 
 
@@ -288,5 +289,31 @@ def create_comparison_plot(box_size=100.0, nmesh=256):
     plt.savefig('power_spectrum_comparison.png', bbox_inches='tight', dpi=300)
     plt.close()
 
+def main():
+    parser = argparse.ArgumentParser(description='Generate comparison plots for LR, HR, and SR power spectra')
+    parser.add_argument('--box-size', type=float, default=100.0,
+                       help='Box size in Mpc/h (default: 100.0)')
+    parser.add_argument('--nmesh', type=int, default=256,
+                       help='Number of mesh cells (default: 256)')
+    parser.add_argument('--lr-path', 
+                       default="outputs/power_spectrum/power_spectrum_box100.0_nmesh256_lr_ds_from_sim_64.txt",
+                       help='Path to LR power spectrum file (default: outputs/power_spectrum/power_spectrum_box100.0_nmesh256_lr_ds_from_sim_64.txt)')
+    parser.add_argument('--hr-path',
+                       default="outputs/power_spectrum/power_spectrum_box100.0_nmesh256_PART_010.txt",
+                       help='Path to HR power spectrum file (default: outputs/power_spectrum/power_spectrum_box100.0_nmesh256_PART_010.txt)')
+    parser.add_argument('--sr-path',
+                       default="outputs/power_spectrum/power_spectrum_box100.0_nmesh256_sr_from_sim_64_8x_ds_32.txt",
+                       help='Path to SR power spectrum file (default: outputs/power_spectrum/power_spectrum_box100.0_nmesh256_sr_from_sim_64_8x_ds_32.txt)')
+    
+    args = parser.parse_args()
+    
+    plot_simulation_comparison(
+        box_size=args.box_size,
+        nmesh=args.nmesh,
+        lr_path=args.lr_path,
+        hr_path=args.hr_path,
+        sr_path=args.sr_path
+    )
+
 if __name__ == "__main__":
-    plot_simulation_comparison()
+    main()

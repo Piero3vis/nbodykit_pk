@@ -9,105 +9,7 @@ Interactive command-line interface and tools for computing and analyzing matter 
 - Interactive command-line interface
 - Automated testing suite
 
-## Project Structure
-The code expects simulation data in the following structure:
-```
-├── data
-│   ├── HR
-│   │   └── PART_010
-│   │       ├── 0
-│   │       │   ├── Density
-│   │       │   ├── EgyWtDensity
-│   │       │   ├── ElectronAbundance
-│   │       │   ├── Generation
-│   │       │   ├── GroupID
-│   │       │   ├── HeIIIIonized
-│   │       │   ├── ID
-│   │       │   ├── InternalEnergy
-│   │       │   ├── Mass
-│   │       │   ├── Metallicity
-│   │       │   ├── Position
-│   │       │   ├── Potential
-│   │       │   ├── SmoothingLength
-│   │       │   └── Velocity
-│   │       ├── 1
-│   │       │   ├── GroupID
-│   │       │   ├── ID
-│   │       │   ├── Mass
-│   │       │   ├── Position
-│   │       │   ├── Potential
-│   │       │   └── Velocity
-│   │       ├── 2
-│   │       │   ├── GroupID
-│   │       │   ├── ID
-│   │       │   ├── Mass
-│   │       │   ├── Position
-│   │       │   ├── Potential
-│   │       │   └── Velocity
-│   │       ├── 3
-│   │       │   ├── GroupID
-│   │       │   ├── ID
-│   │       │   ├── Mass
-│   │       │   ├── Position
-│   │       │   ├── Potential
-│   │       │   └── Velocity
-│   │       ├── 4
-│   │       │   ├── BirthDensity
-│   │       │   ├── Generation
-│   │       │   ├── GroupID
-│   │       │   ├── ID
-│   │       │   ├── Mass
-│   │       │   ├── Metallicity
-│   │       │   ├── Position
-│   │       │   ├── Potential
-│   │       │   ├── StarFormationTime
-│   │       │   └── Velocity
-│   │       ├── 5
-│   │       │   ├── BlackholeAccretionRate
-│   │       │   ├── BlackholeDensity
-│   │       │   ├── BlackholeJumpToMinPot
-│   │       │   ├── BlackholeMass
-│   │       │   ├── BlackholeMinPotPos
-│   │       │   ├── BlackholeMseed
-│   │       │   ├── BlackholeMtrack
-│   │       │   ├── BlackholeProgenitors
-│   │       │   ├── BlackholeSwallowID
-│   │       │   ├── BlackholeSwallowTime
-│   │       │   ├── Generation
-│   │       │   ├── GroupID
-│   │       │   ├── ID
-│   │       │   ├── Mass
-│   │       │   ├── Position
-│   │       │   ├── Potential
-│   │       │   ├── SmoothingLength
-│   │       │   ├── StarFormationTime
-│   │       │   ├── Swallowed
-│   │       │   └── Velocity
-│   │       └── Header
-│   ├── LR
-│   │   ├── dis_32_ds
-│   │   │   ├── Position
-│   │   │   └── Velocity
-│   │   └── lr_ds_from_sim_64
-│   │       ├── Position
-│   │       └── Velocity
-│   └── SR
-│       ├── sr_from_sim_32_x2
-│       │   ├── Position
-│       │   └── Velocity
-│       └── srx2_from_dis_32_ds
-│           ├── Position
-│           └── Velocity
-├── docs
-├── outputs
-│   ├── plots
-│   └── power_spectrum
-├── power_spectrum
-├── src
-│   └── __init__.py
-└── tests
-    └── __init__.py
-```
+
 ## Setup
 
 ### Prerequisites
@@ -159,11 +61,16 @@ This presents a menu with three options:
    - Compares with WMAP9 non-linear power spectrum
 
 3. **Generate Comparison Plots**
-   - Creates comparison plots for LR, HR, and SR simulations
-   - Currently uses fixed paths in data/LR/, data/HR/, data/SR/
+      - Creates comparison plots for LR, HR, and SR simulations
    - Parameters:
+     - Three power spectrum files from outputs/power_spectrum/
      - Box size in Mpc/h (default: 100.0)
      - Number of mesh cells (default: 256)
+   
+   - **Note**: The labels in the plot are fixed:
+     - First selected spectrum will be labeled as 'LR'
+     - Second selected spectrum will be labeled as 'HR'
+     - Third selected spectrum will be labeled as 'SR'
 
 ### Individual Scripts
 
@@ -177,7 +84,7 @@ python src/check_sims.py
 python src/main.py --input_path <path> --nmesh <N> --box-size <L>
 
 # Multi-simulation comparison
-python src/LR_HR_SR.py --box-size <L> --nmesh <N>
+python src/LR_HR_SR.py --box-size <L> --nmesh <N> --lr-path <path> --hr-path <path> --sr-path <path>
 ```
 
 ## Power Spectrum Analysis
@@ -325,3 +232,103 @@ Common issues:
 4. Position range issues
    - Verify positions are in kpc
    - Check for values outside [0, 100000] range
+
+## Project Structure
+The code expects simulation data in the following structure:
+```
+├── data
+│   ├── HR
+│   │   └── PART_010
+│   │       ├── 0
+│   │       │   ├── Density
+│   │       │   ├── EgyWtDensity
+│   │       │   ├── ElectronAbundance
+│   │       │   ├── Generation
+│   │       │   ├── GroupID
+│   │       │   ├── HeIIIIonized
+│   │       │   ├── ID
+│   │       │   ├── InternalEnergy
+│   │       │   ├── Mass
+│   │       │   ├── Metallicity
+│   │       │   ├── Position
+│   │       │   ├── Potential
+│   │       │   ├── SmoothingLength
+│   │       │   └── Velocity
+│   │       ├── 1
+│   │       │   ├── GroupID
+│   │       │   ├── ID
+│   │       │   ├── Mass
+│   │       │   ├── Position
+│   │       │   ├── Potential
+│   │       │   └── Velocity
+│   │       ├── 2
+│   │       │   ├── GroupID
+│   │       │   ├── ID
+│   │       │   ├── Mass
+│   │       │   ├── Position
+│   │       │   ├── Potential
+│   │       │   └── Velocity
+│   │       ├── 3
+│   │       │   ├── GroupID
+│   │       │   ├── ID
+│   │       │   ├── Mass
+│   │       │   ├── Position
+│   │       │   ├── Potential
+│   │       │   └── Velocity
+│   │       ├── 4
+│   │       │   ├── BirthDensity
+│   │       │   ├── Generation
+│   │       │   ├── GroupID
+│   │       │   ├── ID
+│   │       │   ├── Mass
+│   │       │   ├── Metallicity
+│   │       │   ├── Position
+│   │       │   ├── Potential
+│   │       │   ├── StarFormationTime
+│   │       │   └── Velocity
+│   │       ├── 5
+│   │       │   ├── BlackholeAccretionRate
+│   │       │   ├── BlackholeDensity
+│   │       │   ├── BlackholeJumpToMinPot
+│   │       │   ├── BlackholeMass
+│   │       │   ├── BlackholeMinPotPos
+│   │       │   ├── BlackholeMseed
+│   │       │   ├── BlackholeMtrack
+│   │       │   ├── BlackholeProgenitors
+│   │       │   ├── BlackholeSwallowID
+│   │       │   ├── BlackholeSwallowTime
+│   │       │   ├── Generation
+│   │       │   ├── GroupID
+│   │       │   ├── ID
+│   │       │   ├── Mass
+│   │       │   ├── Position
+│   │       │   ├── Potential
+│   │       │   ├── SmoothingLength
+│   │       │   ├── StarFormationTime
+│   │       │   ├── Swallowed
+│   │       │   └── Velocity
+│   │       └── Header
+│   ├── LR
+│   │   ├── dis_32_ds
+│   │   │   ├── Position
+│   │   │   └── Velocity
+│   │   └── lr_ds_from_sim_64
+│   │       ├── Position
+│   │       └── Velocity
+│   └── SR
+│       ├── sr_from_sim_32_x2
+│       │   ├── Position
+│       │   └── Velocity
+│       └── srx2_from_dis_32_ds
+│           ├── Position
+│           └── Velocity
+├── docs
+├── outputs
+│   ├── plots
+│   └── power_spectrum
+├── power_spectrum
+├── src
+│   └── __init__.py
+└── tests
+    └── __init__.py
+```

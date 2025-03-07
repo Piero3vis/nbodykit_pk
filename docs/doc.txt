@@ -1,0 +1,12 @@
+The super simulations are run on the Ng=64 data from the simulation PART_010.
+The different road explored are: 
+- original 8x super resolution. This one can be random_sampled to different Ng.
+- downsample the original 64^3 array by a factor of 2^3 then modified the generator to upsample by this factor (so LR=32, HR=64, SR=2x32=64)
+
+The dimension of the simulation box are in kpc, the pk.py script convert them in Mpc/h. 
+
+The core name are HR: sim/PART_010 (the original simulation), the LR
+
+
+
+
