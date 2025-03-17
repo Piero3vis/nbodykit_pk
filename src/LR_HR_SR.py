@@ -132,7 +132,7 @@ def plot_simulation_comparison(box_size=100.0, nmesh=256, lr_path=None, hr_path=
     ax1 = plt.subplot(gs[0])
     ax1.loglog(k_lr, pk_lr_measured, '-', color=colors['LR'], label='LR (Ng = 32)', linewidth=2)
     ax1.loglog(k_hr, pk_hr_measured, '-', color=colors['HR'], label='HR (Ng = 64)', linewidth=2)
-    ax1.loglog(k_sr, pk_sr_measured, '-', color=colors['SR'], label='SR (Ng = 32 (upsampling 8x, random sampled to 32))', linewidth=2)
+    ax1.loglog(k_sr, pk_sr_measured, '-', color=colors['SR'], label='SR (Ng = 32 (upsampling 2x))', linewidth=2)
     ax1.loglog(k_theory, pk_nonlin, '--', color=colors['Theory'], label='Non-linear theory (WMAP9)', linewidth=2)
     ax1.axvline(x=k_max_theory, color='black', linestyle='--', alpha=0.4)
     ax1.set_ylabel('P(k) [(Mpc/h)³]', fontsize=14)
@@ -191,7 +191,7 @@ def plot_simulation_comparison(box_size=100.0, nmesh=256, lr_path=None, hr_path=
     
     
     os.makedirs('outputs/plots/comparison_plots', exist_ok=True)
-    plt.savefig('outputs/plots/comparison_plots/power_spectrum_comparison.png', bbox_inches='tight', dpi=300)
+    plt.savefig(f'outputs/plots/comparison_plots/power_spectrum_comparison_box{box_size}_nmesh{nmesh}.png', bbox_inches='tight', dpi=300)
     plt.show()
     plt.close()
 

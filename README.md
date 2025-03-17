@@ -19,14 +19,14 @@ Interactive command-line interface and tools for computing and analyzing matter 
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/power-spectrum-analysis.git
-cd power-spectrum-analysis
+git clone https://github.com/Piero3vis/nbodykit_pk.git
+cd nbodykit_pk
 ```
 
 2. Create and activate the conda environment:
 ```bash
 conda env create -f environment.yml
-conda activate power_spectrum_env
+conda activate nbodykit-env
 ```
 
 3. Verify installation:
