@@ -40,7 +40,7 @@ python -m unittest discover tests
 
 Run the interactive analysis tool:
 ```bash
-./compute_plot_pk.sh
+./welcome_script.sh
 ```
 
 This presents a menu with three options:
